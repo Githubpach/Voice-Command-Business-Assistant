@@ -183,7 +183,7 @@ app.post('/api/command', (req, res) => {
     return;
   }
 
-  // ── ADD TO STOCK ───────────────────────────────
+  // ── ADDing  TO STOCK ───────────────────────────────
   if (lower.includes('add') && lower.includes('stock')) {
     const quantityMatch = lower.match(/(\d+)/);
     const itemMatch = lower.match(/(?:add|onjeza)\s+(?:\d+\s+)?(.+?)(?:\s+to|\s+in|$)/i);
@@ -217,7 +217,6 @@ app.post('/api/command', (req, res) => {
     return;
   }
 
-  // ── QUICK CHECKS (can be expanded later) ───────
   if (lower.includes('stock') || lower.includes('inventory')) {
     db.all('SELECT * FROM inventory', [], (err, rows) => {
       if (err || rows.length === 0) {
