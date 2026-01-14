@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, TrendingUp, TrendingDown, Package, DollarSign, HelpCircle, BarChart3, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
+console.log(API_BASE_URL);
 
 const VoiceBusinessAssistant = () => {
   const [isListening, setIsListening] = useState(false);
@@ -53,9 +56,9 @@ const VoiceBusinessAssistant = () => {
   const loadData = async () => {
     try {
       const [salesRes, expensesRes, inventoryRes] = await Promise.all([
-        fetch('https://voice-command-business-assistant.onrender.com/api/sales'),
-        fetch('https://voice-command-business-assistant.onrender.com/api/expenses'),
-        fetch('https://voice-command-business-assistant.onrender.com/api/inventory')
+        fetch(`${API_BASE_URL}/api/sales`),
+        fetch(`${API_BASE_URL}/api/expenses`),
+        fetch(`${API_BASE_URL}/api/inventory`)
       ]);
 
       const salesData = await salesRes.json();
