@@ -131,7 +131,7 @@ const VoiceBusinessAssistant = () => {
       }
     } catch (err) {
       console.error('Command processing error:', err);
-      speak("Ndalephera kukonza lamuloli. Yesaninso kapena funsani 'thandizo'.");
+      speak("Ndalephera kunvesesa zomwe mukunena. Yesaninso kapena funsani 'thandizo'.");
       addToLog(command, "Network or server error", "error");
     }
   };
@@ -218,9 +218,9 @@ const VoiceBusinessAssistant = () => {
 
   const provideHelp = () => {
     const helpText =
-      "Ndingakuthandizeni ndi: kulemba malonda (gulitsa 3 buku pa 500), " +
-      "kulemba zowononga (gula shuga pa 3000), " +
-      "kuonjezera katundu (onjeza 10 buku ku stock), " +
+      "Ndingakuthandizeni ndi: kulemba malonda (ndagulitsa ma buku atatu pa 500), " +
+      "kulemba zowononga (ndagula shuga pa 3000), " +
+      "kuonjezera katundu (ndaonjeza 10 buku ku stock), " +
       "ndi kuonera phindu kapena katundu wanu.";
     speak(helpText);
     addToLog("Thandizo", "Malangizo ofotokozedwa", "info");
