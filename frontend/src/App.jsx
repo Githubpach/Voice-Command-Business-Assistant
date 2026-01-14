@@ -147,20 +147,26 @@ const VoiceBusinessAssistant = () => {
   };
 
   const exportData = () => {
-    const data = {
-      sales,
-      expenses,
-      inventory,
-      exportDate: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `business-data-${new Date().toISOString().split('T')[0]}.xlsx`;
-    a.click();
-    URL.revokeObjectURL(url);
-    speak("Data exported successfully");
+    const salesSheet = XLSX.utils.json_to_sheet(sales);
+    const expensesSheet = XLSX.utils.json_to_sheet(expenses);
+
+    const inventoryArray = Object.entries(inventory).map(([item, quantity]) => ({
+      item,
+      quantity,
+    }));
+    const inventorySheet = XLSX.utils.json_to_sheet(inventoryArray);
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, salesSheet, 'Sales');
+    XLSX.utils.book_append_sheet(workbook, expensesSheet, 'Expenses');
+    XLSX.utils.book_append_sheet(workbook, inventorySheet, 'Inventory');
+
+    XLSX.writeFile(
+      workbook,
+      `business-data-${new Date().toISOString().split('T')[0]}.xlsx`
+    );
+
+    speak('Excel file exported successfully');
   };
 
   const quickCommand = (cmd) => {
