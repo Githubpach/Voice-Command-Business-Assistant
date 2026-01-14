@@ -1,0 +1,30 @@
+{
+  "name": "voice-command-business-assistant",
+  "version": "1.0.0",
+  "description": "A voice-controlled web app using React and Node.js for speech input, command processing, and voice feedback.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Githubpach/Voice-Command-Business-Assistant.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Githubpach/Voice-Command-Business-Assistant/issues"
+  },
+  "homepage": "https://github.com/Githubpach/Voice-Command-Business-Assistant#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
