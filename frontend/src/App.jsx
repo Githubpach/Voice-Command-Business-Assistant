@@ -14,7 +14,7 @@ const VoiceBusinessAssistant = () => {
   const recognitionRef = useRef(null);
   const synthRef = useRef(window.speechSynthesis);
 
-    useEffect(() => {
+  useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
@@ -219,6 +219,20 @@ const VoiceBusinessAssistant = () => {
     addToLog("Thandizo", "Malangizo ofotokozedwa", "info");
   };
 
+  if (!browserSupported) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Browser Siwothandiza</h1>
+          <p className="text-gray-600">
+            Tsambali imafuna browser yomwe imathandizira Web Speech API.
+            Chonde gwiritsani ntchito Chrome, Edge, kapena Safari.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -326,8 +340,8 @@ const VoiceBusinessAssistant = () => {
                 <div
                   key={entry.id}
                   className={`p-4 rounded-lg border-l-4 ${entry.type === 'success' ? 'bg-green-50 border-green-500' :
-                      entry.type === 'error' ? 'bg-red-50 border-red-500' :
-                        'bg-blue-50 border-blue-500'
+                    entry.type === 'error' ? 'bg-red-50 border-red-500' :
+                      'bg-blue-50 border-blue-500'
                     }`}
                 >
                   <div className="flex justify-between items-start mb-1">
