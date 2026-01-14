@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-
+const VoiceBusinessAssistant = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto">
@@ -10,11 +10,11 @@ import React, { useState, useEffect, useRef } from 'react';
             Voice-Command Business Assistant
           </h1>
           <p className="text-gray-600 text-center">
-            Lankhulani Kuti Muzithandize nokha Mmene mukufunira (Chingelezi, Chichewa, kapena kaasakaniza)
+            Lankhulani Kuti Muzithandize Mmene mukufunira (Chingelezi, Chichewa, kapena kaasakaniza)
           </p>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary*/}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-green-500 rounded-xl shadow-lg p-6 text-white">
             <div className="flex items-center justify-between">
@@ -28,7 +28,7 @@ import React, { useState, useEffect, useRef } from 'react';
           <div className="bg-red-500 rounded-xl shadow-lg p-6 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm opacity-90">Zowononga za Lero</p>
+                <p className="text-sm opacity-90">tagwilista ntchito Lero</p>
                 <p className="text-3xl font-bold mt-1">{summary.expenses}</p>
               </div>
               <TrendingDown size={40} className="opacity-80" />
@@ -60,14 +60,14 @@ import React, { useState, useEffect, useRef } from 'react';
             </p>
             {transcript && (
               <div className="mt-4 p-4 bg-indigo-50 rounded-lg w-full max-w-md">
-                <p className="text-sm text-gray-600 mb-1">Mwanena:</p>
+                <p className="text-sm text-gray-600 mb-1">Mwanena Kut:</p>
                 <p className="text-gray-800 font-medium">{transcript}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions*/}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <button onClick={() => quickCommand("what is my stock")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <Package size={32} className="text-purple-500 mx-auto mb-2" />
@@ -124,7 +124,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
         {/* Footer */}
         <div className="mt-6 text-center text-gray-600 text-sm">
-          <p>💡 Yesani kunena: "Gulitsa 3 buku pa 500" kapena "Sold 3 books at 500"</p>
+          <p> Yesani kunena kuti: "Ndagulitsa ma buku atatu pa Mtengo wa 500" kapena "Sold 3 books at 500"</p>
         </div>
       </div>
     </div>

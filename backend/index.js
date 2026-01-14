@@ -9,7 +9,7 @@ app.use(express.json());
 const db = new sqlite3.Database('business.db');
 
 db.serialize(() => {
-  db.run(`
+    db.run(`
     CREATE TABLE IF NOT EXISTS sales (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT,
@@ -20,7 +20,7 @@ db.serialize(() => {
     )
   `);
 
-  db.run(`
+    db.run(`
     CREATE TABLE IF NOT EXISTS expenses (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT,
@@ -29,7 +29,7 @@ db.serialize(() => {
     )
   `);
 
-  db.run(`
+    db.run(`
     CREATE TABLE IF NOT EXISTS inventory (
       item TEXT PRIMARY KEY,
       quantity INTEGER
@@ -37,57 +37,55 @@ db.serialize(() => {
   `);
 });
 
-// ────────────────────────────────────────────────
-// Helper: Normalize command (Chichewa → English mapping)
-// ────────────────────────────────────────────────
+// mapping chichewa lang
 function normalizeCommand(command) {
-  let normalized = command.toLowerCase().trim();
+    let normalized = command.toLowerCase().trim();
 
-  const mappings = {
-    // Sales
-    'gulitsa': 'sold',
-    'anagulitsa': 'sold',
-    'kugulitsa': 'sold',
-    'malonda': 'sale',
-    'ndagulitsa': 'sold',
-    // Expenses / Purchases
-    'gula': 'bought',
-    'anagula': 'bought',
-    'kugula': 'bought',
-    'lipira': 'paid',
-    'lipirani': 'paid',
-    'chiwongola': 'expense',
-    // Inventory
-    'onjeza': 'add',
-    'onjezerani': 'add',
-    'katundu': 'stock',
-    'zinthu': 'inventory',
-    // Reports
-    'phindu': 'profit',
-    'chidule': 'summary',
-    'thandizo': 'help',
-    'lero': 'today',
-    'tsiku lino': 'today',
-    'mlungu': 'week',
-    'mwezi': 'month',
-    // Numbers (common Chichewa)
-    'chimodzi': '1',
-    'ziwiri': '2',
-    'zitatu': '3',
-    'zinayi': '4',
-    'zisanu': '5',
-    'zisanu ndi chimodzi': '6',
-    // Add more as you test real speech results
-  };
+    const mappings = {
+        // Sales
+        'gulitsa': 'sold',
+        'anagulitsa': 'sold',
+        'kugulitsa': 'sold',
+        'malonda': 'sale',
+        'ndagulitsa': 'sold',
+        // Expenses or Purchases
+        'gula': 'bought',
+        'anagula': 'bought',
+        'kugula': 'bought',
+        'lipira': 'paid',
+        'lipirani': 'paid',
+        'chiwongola': 'expense',
+        // Inventory
+        'onjeza': 'add',
+        'onjezerani': 'add',
+        'katundu': 'stock',
+        'zinthu': 'inventory',
+        // Reports
+        'phindu': 'profit',
+        'chidule': 'summary',
+        'thandizo': 'help',
+        'lero': 'today',
+        'tsiku lino': 'today',
+        'mlungu': 'week',
+        'mwezi': 'month',
+        // numberrz
+        'chimodzi': '1',
+        'ziwiri': '2',
+        'zitatu': '3',
+        'zinayi': '4',
+        'zisanu': '5',
+        'zisanu ndi chimodzi': '6'
+    };
 
-  for (const [chichewa, english] of Object.entries(mappings)) {
-    const regex = new RegExp(`\\b${chichewa}\\b`, 'gi');
-    normalized = normalized.replace(regex, english);
-  }
+    for (const [chichewa, english] of Object.entries(mappings)) {
+        const regex = new RegExp(`\\b${chichewa}\\b`, 'gi');
+        normalized = normalized.replace(regex, english);
+    }
 
-  return normalized;
+    return normalized;
 }
+//end of mapping some to be added latr 
 
 app.listen(3001, () => {
-  console.log('Server running on http://localhost:3001');
+    console.log('Server running on http://localhost:3001');
 });
