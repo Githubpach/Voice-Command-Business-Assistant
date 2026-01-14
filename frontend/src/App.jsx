@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, TrendingUp, TrendingDown, Package, DollarSign, HelpCircle, BarChart3, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const VoiceBusinessAssistant = () => {
   const [isListening, setIsListening] = useState(false);
