@@ -1,6 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Mic, MicOff, TrendingUp, TrendingDown, Package, DollarSign, HelpCircle, BarChart3, Download } from 'lucide-react';
 
 const VoiceBusinessAssistant = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [activityLog, setActivityLog] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [expenses, setExpenses] = useState([]);
+  const [inventory, setInventory] = useState({});
+  const [summary, setSummary] = useState({ sales: 0, expenses: 0, profit: 0 });
+  const [browserSupported, setBrowserSupported] = useState(true);
+
+  const recognitionRef = useRef(null);
+  const synthRef = useRef(window.speechSynthesis);
+
+    useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-US'; //since ww will have word mixture for english and chichewa
+
+      recognitionRef.current.onresult = (event) => {
+        const command = event.results[0][0].transcript.trim();
+        setTranscript(command);
+        handleCommand(command);
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+        if (event.error === 'no-speech') {
+          speak("Sindinamve kalikonse. Yesaninso kupanga record, chonde.");
+        } else {
+          speak("Ndalephera kumva bwino bwino. Yesaninso kupanga record, chonde.");
+        }
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    } else {
+      setBrowserSupported(false);
+      console.error('Speech recognition not supported');
+    }
+
+    loadData();
+  }, []);
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-4xl mx-auto">
