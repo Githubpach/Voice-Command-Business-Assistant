@@ -242,6 +242,31 @@ app.post('/api/command', (req, res) => {
   res.json(response);
 });
 
+ //fast api's for testing data retrival
+
+app.get('/api/sales', (req, res) => {
+  db.all('SELECT * FROM sales ORDER BY date DESC LIMIT 50', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/expenses', (req, res) => {
+  db.all('SELECT * FROM expenses ORDER BY date DESC LIMIT 50', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+app.get('/api/inventory', (req, res) => {
+  db.all('SELECT * FROM inventory', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const inv = {};
+    rows.forEach(r => inv[r.item] = r.quantity);
+    res.json(inv);
+  });
+});
+
 app.listen(3001, () => {
   console.log('Server running on http://localhost:3001');
 });
