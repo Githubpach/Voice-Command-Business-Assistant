@@ -3,7 +3,6 @@ import { Mic, MicOff, TrendingUp, TrendingDown, Package, DollarSign, HelpCircle,
 import * as XLSX from 'xlsx';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-console.log(API_BASE_URL);
 
 const VoiceBusinessAssistant = () => {
   const [isListening, setIsListening] = useState(false);
@@ -56,9 +55,9 @@ const VoiceBusinessAssistant = () => {
   const loadData = async () => {
     try {
       const [salesRes, expensesRes, inventoryRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/sales`),
-        fetch(`${API_BASE_URL}/api/expenses`),
-        fetch(`${API_BASE_URL}/api/inventory`)
+        fetch(`${API_BASE_URL}api/sales`),
+        fetch(`${API_BASE_URL}api/expenses`),
+        fetch(`${API_BASE_URL}api/inventory`)
       ]);
 
       const salesData = await salesRes.json();
@@ -113,7 +112,7 @@ const VoiceBusinessAssistant = () => {
     if (!command) return;
 
     try {
-      const res = await fetch('https://voice-command-business-assistant.onrender.com/api/command', {
+      const res = await fetch(`${API_BASE_URL}api/command`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command })
