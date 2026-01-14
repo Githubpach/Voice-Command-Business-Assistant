@@ -17,7 +17,7 @@ This project solves that problem by enabling **voice-based business management**
 ## Solution Overview
 
 The application allows users to:
-- Speak commands (e.g., “Gulitsa 3 buku pa 500”)
+- Speak commands (e.g., “Ndagulitsa 3 buku pa 500”)
 - Automatically process the command on the backend
 - Store and retrieve business data
 - Receive **spoken feedback** instead of text-only responses
@@ -36,5 +36,4 @@ The application allows users to:
 
 ---
 
-## System Architecture
 
