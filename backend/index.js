@@ -4,7 +4,7 @@ const cors = require('cors');
 
 const app = express();
 app.use(cors({
-  origin: 'https://voicecommand-business-assistant.vercel.app/'
+  origin: 'https://voice-commandbusiness-assistant.vercel.app/'
 }));
 app.use(express.json());
 
