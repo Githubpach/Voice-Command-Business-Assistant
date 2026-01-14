@@ -53,9 +53,9 @@ const VoiceBusinessAssistant = () => {
   const loadData = async () => {
     try {
       const [salesRes, expensesRes, inventoryRes] = await Promise.all([
-        fetch('/api/sales'),
-        fetch('/api/expenses'),
-        fetch('/api/inventory')
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/sales`),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/expenses`),
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/api/inventory`)
       ]);
 
       const salesData = await salesRes.json();
@@ -110,7 +110,7 @@ const VoiceBusinessAssistant = () => {
     if (!command) return;
 
     try {
-      const res = await fetch('/api/command', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/command`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command })

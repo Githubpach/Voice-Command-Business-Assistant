@@ -3,7 +3,9 @@ const sqlite3 = require('sqlite3').verbose();
 const cors = require('cors');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://voicecommand-business-assistant.vercel.app/'
+}));
 app.use(express.json());
 
 const db = new sqlite3.Database('business.db');
@@ -242,7 +244,7 @@ app.post('/api/command', (req, res) => {
   res.json(response);
 });
 
- //fast api's for testing data retrival
+//fast api's for testing data retrival
 
 app.get('/api/sales', (req, res) => {
   db.all('SELECT * FROM sales ORDER BY date DESC LIMIT 50', [], (err, rows) => {
