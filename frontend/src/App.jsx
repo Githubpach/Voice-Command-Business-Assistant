@@ -54,7 +54,7 @@ const VoiceBusinessAssistant = () => {
     try {
       const [salesRes, expensesRes, inventoryRes] = await Promise.all([
         fetch('https://voice-command-business-assistant.onrender.com/api/sales'),
-        fetch('$https://voice-command-business-assistant.onrender.com/api/expenses'),
+        fetch('https://voice-command-business-assistant.onrender.com/api/expenses'),
         fetch('https://voice-command-business-assistant.onrender.com/api/inventory')
       ]);
 
