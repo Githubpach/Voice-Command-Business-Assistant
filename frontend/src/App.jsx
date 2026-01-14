@@ -49,6 +49,176 @@ const VoiceBusinessAssistant = () => {
     loadData();
   }, []);
 
+  const loadData = async () => {
+    try {
+      const [salesRes, expensesRes, inventoryRes] = await Promise.all([
+        fetch('/api/sales'),
+        fetch('/api/expenses'),
+        fetch('/api/inventory')
+      ]);
+
+      const salesData = await salesRes.json();
+      const expensesData = await expensesRes.json();
+      const invData = await inventoryRes.json();
+
+      setSales(salesData);
+      setExpenses(expensesData);
+      setInventory(invData);
+      calculateSummary(salesData, expensesData);
+    } catch (err) {
+      console.error('Error loading data:', err);
+      speak("Error loading your business data. Please check connection.");
+    }
+  };
+
+  const calculateSummary = (salesData, expensesData) => {
+    const today = new Date().toDateString();
+    const totalSales = salesData
+      .filter((s) => new Date(s.date).toDateString() === today)
+      .reduce((sum, s) => sum + (s.amount || 0), 0);
+    const totalExpenses = expensesData
+      .filter((e) => new Date(e.date).toDateString() === today)
+      .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+    setSummary({
+      sales: totalSales,
+      expenses: totalExpenses,
+      profit: totalSales - totalExpenses,
+    });
+  };
+
+  const speak = (text) => {
+    synthRef.current.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'sw-KE';
+    utterance.rate = 0.95;
+    synthRef.current.speak(utterance);
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current.stop();
+    } else {
+      setTranscript('');
+      recognitionRef.current.start();
+    }
+    setIsListening(!isListening);
+  };
+
+  const handleCommand = async (command) => {
+    if (!command) return;
+
+    try {
+      const res = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      speak(data.message || "Command processed.");
+
+      addToLog(command, data.message, data.type || (data.success ? 'success' : 'error'));
+
+      if (data.success) {
+        loadData(); // refresh all data after successful action
+      }
+    } catch (err) {
+      console.error('Command processing error:', err);
+      speak("Ndalephera kukonza lamuloli. Yesaninso kapena funsani 'thandizo'.");
+      addToLog(command, "Network or server error", "error");
+    }
+  };
+
+  const addToLog = (command, result, type) => {
+    const entry = {
+      id: Date.now(),
+      time: new Date().toLocaleTimeString(),
+      command,
+      result,
+      type
+    };
+    setActivityLog((prev) => [entry, ...prev].slice(0, 20));
+  };
+
+  const exportData = () => {
+    const data = {
+      sales,
+      expenses,
+      inventory,
+      exportDate: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `business-data-${new Date().toISOString().split('T')[0]}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    speak("Data exported successfully");
+  };
+
+  const quickCommand = (cmd) => {
+    setTranscript(cmd);
+    handleCommand(cmd);
+  };
+
+  const reportInventory = () => {
+    const items = Object.keys(inventory);
+    if (items.length === 0) {
+      speak("Mulibe katundu aliyense pakadali pano.");
+      addToLog("Stock check", "Inventory is empty", "info");
+      return;
+    }
+    let report = "Katundu wanu pakali pano: ";
+    items.forEach((item, i) => {
+      report += `${inventory[item]} ${item}`;
+      if (i < items.length - 1) report += ", ";
+    });
+    speak(report);
+    addToLog("Stock check", report, "info");
+  };
+
+  const reportProfit = (period = "today") => {
+    let filteredSales = sales;
+    let filteredExpenses = expenses;
+    let label = "lero";
+
+    if (period === "week") {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      filteredSales = sales.filter(s => new Date(s.date) >= weekAgo);
+      filteredExpenses = expenses.filter(e => new Date(e.date) >= weekAgo);
+      label = "sabata ino";
+    } else if (period === "month") {
+      const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      filteredSales = sales.filter(s => new Date(s.date) >= monthAgo);
+      filteredExpenses = expenses.filter(e => new Date(e.date) >= monthAgo);
+      label = "mwezi uno";
+    }
+
+    const totalSales = filteredSales.reduce((sum, s) => sum + (s.amount || 0), 0);
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const profit = totalSales - totalExpenses;
+
+    speak(`Phindu lanu ${label} ndi ${profit} Kwacha.`);
+    addToLog("Phindu", `${label}: ${profit}`, "info");
+  };
+
+  const provideHelp = () => {
+    const helpText =
+      "Ndingakuthandizeni ndi: kulemba malonda (gulitsa 3 buku pa 500), " +
+      "kulemba zowononga (gula shuga pa 3000), " +
+      "kuonjezera katundu (onjeza 10 buku ku stock), " +
+      "ndi kuonera phindu kapena katundu wanu.";
+    speak(helpText);
+    addToLog("Thandizo", "Malangizo ofotokozedwa", "info");
+  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
