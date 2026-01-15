@@ -45,6 +45,7 @@ function normalizeCommand(command) {
     'pa mtengo wa': 'at',
     // Sales
     'gulitsa': 'sold',
+    'gulita': 'sold',
     'anagulitsa': 'sold',
     'ndanagulitsa pa mtengo': 'sold',
     'kugulitsa': 'sold',
@@ -133,15 +134,13 @@ app.post('/api/command', (req, res) => {
     });
   }
 
-  const originalCommand = command;
   const normalized = normalizeCommand(command);
   const lower = normalized.toLowerCase();
 
-  let response = { success: false, message: "", type: "error" };
-
+  // ── SALES 
   if (lower.includes('sold') || lower.includes('sale')) {
     //const itemMatch = lower.match(/(?:sold|sale)\s+(\d+)\s+([a-z\s]+?)(?:\s+at|\s+for|$)/i);       
-    let quantity, item;
+    let quantity, item, price;
 
     let match1 = lower.match(/sold\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i);
 
@@ -160,7 +159,7 @@ app.post('/api/command', (req, res) => {
       return res.json({ success: false, message: "Could not understand sale format" });
     }
 
-    if (price === 0) {
+    if (!price || price === 0) {
       response.message = "chonde ndiwuzeni Mtengo. mwachitsanzo: ndagulitsa 3 buku pa 500";
       return res.json(response);
     }
@@ -168,6 +167,13 @@ app.post('/api/command', (req, res) => {
     const amount = quantity * price;
     const date = new Date().toISOString();
     db.get('SELECT quantity FROM inventory WHERE item = ?', [item], (err, row) => { //forgooten to check invontory before slling
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Database error checking inventory",
+          type: "error"
+        });
+      }
       const currentQty = row ? row.quantity : 0;
       if (currentQty < quantity) {
         response.message = `Mulibe zinthu zokwanira, ${currentQty} ${item}, koma mukufuna kugulitsa ${quantity}.`;
@@ -179,42 +185,52 @@ app.post('/api/command', (req, res) => {
         [date, item, quantity, price, amount],
         function (err) {
           if (err) {
-            response.message = "Error saving sale";
-            return res.status(500).json(response);
+            console.error('Sales insert error:', err);
+            return res.status(500).json({
+              success: false,
+              message: "Error saving sale",
+              type: "error"
+            });
           }
 
+          const newQty = currentQty - quantity;
           db.run(
             'UPDATE inventory SET quantity = ? WHERE item = ?',
-            [currentQty - quantity, item],
+            [newQty, item],
             (err2) => {
-              if (err2) console.error('Inventory update error:', err2);
+              if (err2) {
+                console.error('Inventory update error:', err2);
+              }
             }
           );
 
-          response = {
+          return res.json({
             success: true,
-            message: `zogulitsa sasungidwa: ${quantity} ${item} sold for ${amount} total.`,
+            message: `Zogulitsa zasungidwa: ${quantity} ${item} @ ${price} = ${amount} total.`,
             type: "success"
-          };
-          return res.json(response);
+          });
         }
       );
     });
     return;
   }
 
+  // EXPENSES
   if (lower.includes('bought') || lower.includes('paid') || lower.includes('expense')) {
     const amountMatch = lower.match(/(\d+)/);
     const itemMatch =
-      lower.match(/(?:bought|paid|expense)\s+(.+?)\s+(?:for|at)?\s*\d+/) ||
-      lower.match(/(?:for|at)\s+(.+)/);
+      lower.match(/(?:bought|paid|expense)\s+(.+?)\s+(?:for|at)\s*\d+/) ||
+      lower.match(/(?:bought|paid|expense)\s+(.+)/);
 
     const amount = amountMatch ? parseInt(amountMatch[1]) : 0;
-    const item = itemMatch ? itemMatch[1].trim() : 'expense';
+    const item = itemMatch ? itemMatch[1].trim().replace(/for|at/gi, '').trim() : 'expense';
 
-    if (amount === 0) {
-      response.message = "Please tell me the amount. Example: gula shuga pa 3000";
-      return res.json(response);
+    if (!amount || amount === 0) {
+      return res.json({
+        success: false,
+        message: "Please tell me the amount. Example: gula shuga pa 3000",
+        type: "error"
+      });
     }
 
     const date = new Date().toISOString();
@@ -224,78 +240,104 @@ app.post('/api/command', (req, res) => {
       [date, item, amount],
       function (err) {
         if (err) {
-          response.message = "Error saving expense";
-          return res.status(500).json(response);
+          console.error('Expense insert error:', err);
+          return res.status(500).json({
+            success: false,
+            message: "Error saving expense",
+            type: "error"
+          });
         }
 
-        response = {
+        return res.json({
           success: true,
           message: `Expense recorded: ${item} for ${amount}.`,
           type: "success"
-        };
-        return res.json(response);
+        });
       }
     );
     return;
   }
 
-  // ── ADDing  TO STOCK ───────────────────────────────
-  if (lower.includes('add') && lower.includes('stock')) {
+  // ── ADDing  TO Stok
+   if (lower.includes('add') && (lower.includes('stock') || lower.includes('inventory'))) {
     const quantityMatch = lower.match(/(\d+)/);
     const itemMatch = lower.match(/(?:add|onjeza)\s+(?:\d+\s+)?(.+?)(?:\s+to|\s+in|$)/i);
 
     const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 0;
-    let item = itemMatch ? itemMatch[1].trim().replace(/to stock|to inventory/i, '').trim() : 'item';
+    let item = itemMatch ? itemMatch[1].trim().replace(/to stock|to inventory|stock|inventory/gi, '').trim() : 'item';
 
-    if (quantity === 0) {
-      response.message = "Please tell me how many to add. Example: onjeza 10 buku ku stock";
-      return res.json(response);
+    if (!quantity || quantity === 0) {
+      return res.json({
+        success: false,
+        message: "Please tell me how many to add. Example: onjeza 10 buku ku stock",
+        type: "error"
+      });
     }
 
     db.run(
       'INSERT OR REPLACE INTO inventory (item, quantity) ' +
       'VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item = ?), 0) + ?)',
       [item, item, quantity],
-      (err) => {
+      function (err) {
         if (err) {
-          response.message = "Error updating stock";
-          return res.status(500).json(response);
+          console.error('Stock update error:', err);
+          return res.status(500).json({
+            success: false,
+            message: "Error updating stock",
+            type: "error"
+          });
         }
 
-        response = {
+        return res.json({
           success: true,
           message: `Added ${quantity} ${item} to stock.`,
           type: "success"
-        };
-        return res.json(response);
+        });
       }
     );
     return;
   }
 
+  // VIEW STOCK/INVENTORY
   if (lower.includes('stock') || lower.includes('inventory')) {
-    db.all('SELECT * FROM inventory', [], (err, rows) => {
-      if (err || rows.length === 0) {
-        response.message = "Your inventory is empty.";
-        response.type = "info";
-      } else {
-        let msg = "Current stock: ";
-        rows.forEach((r, i) => {
-          msg += `${r.quantity} ${r.item}`;
-          if (i < rows.length - 1) msg += ", ";
+    db.all('SELECT * FROM inventory ORDER BY item', [], (err, rows) => {
+      if (err) {
+        return res.status(500).json({
+          success: false,
+          message: "Error retrieving inventory",
+          type: "error"
         });
-        response.message = msg;
-        response.type = "info";
       }
-      response.success = true;
-      res.json(response);
+
+      if (rows.length === 0) {
+        return res.json({
+          success: true,
+          message: "Your inventory is empty. Add items with: 'add 10 books to stock'",
+          type: "info"
+        });
+      }
+
+      let msg = "Current stock: ";
+      rows.forEach((r, i) => {
+        msg += `${r.quantity} ${r.item}`;
+        if (i < rows.length - 1) msg += ", ";
+      });
+
+      return res.json({
+        success: true,
+        message: msg,
+        type: "info"
+      });
     });
     return;
   }
 
-  // Fallback if an error is raised
-  response.message = "Sindinamve bwino. Yesani kuti: 'Gulitsa 3 buku pa 500' kapena 'Sold 3 books at 500'";
-  res.json(response);
+  // ── FALLBACK ────────────────────────────────────────
+  return res.json({
+    success: false,
+    message: "Sindinamve bwino. Yesani kuti: 'Gulitsa 3 buku pa 500' kapena 'Sold 3 books at 500' or 'add 10 books to stock'",
+    type: "error"
+  });
 });
 
 //fast api's for testing data retrival
