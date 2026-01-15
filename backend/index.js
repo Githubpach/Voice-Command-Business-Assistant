@@ -53,10 +53,12 @@ function normalizeCommand(command) {
     // Expenses or Purchases
     'gula': 'bought',
     'anagula': 'bought',
+    'nagula': 'bought',
     'ndagula': 'bought',
     'ndagula pa mtengo': 'bought',
     'kugula': 'bought',
     'lipira': 'paid',
+    'ndalipira': 'paid',
     'lipirani': 'paid',
     'chiwongola': 'expense',
     // Inventory
