@@ -42,6 +42,7 @@ function normalizeCommand(command) {
   let normalized = command.toLowerCase().trim();
 
   const mappings = {
+    'pa mtengo wa': 'at',
     // Sales
     'gulitsa': 'sold',
     'anagulitsa': 'sold',
@@ -90,25 +91,25 @@ function normalizeCommand(command) {
   };
 
   const numberWords = {
-  'one': '1',
-  'two': '2',
-  'three': '3',
-  'four': '4',
-  'five': '5',
-  'six': '6',
-  'seven': '7',
-  'eight': '8',
-  'nine': '9',
-  'ten': '10'
-};
+    'one': '1',
+    'two': '2',
+    'three': '3',
+    'four': '4',
+    'five': '5',
+    'six': '6',
+    'seven': '7',
+    'eight': '8',
+    'nine': '9',
+    'ten': '10'
+  };
 
-normalized = normalized
-  .replace(/pa mtengo wa|pa mtengo|mtengo wa/gi, 'at');
+  normalized = normalized
+    .replace(/pa mtengo wa|pa mtengo|mtengo wa/gi, 'at');
 
-for (const [word, digit] of Object.entries(numberWords)) {
-  const regex = new RegExp(`\\b${word}\\b`, 'gi');
-  normalized = normalized.replace(regex, digit);
-}
+  for (const [word, digit] of Object.entries(numberWords)) {
+    const regex = new RegExp(`\\b${word}\\b`, 'gi');
+    normalized = normalized.replace(regex, digit);
+  }
 
   for (const [chichewa, english] of Object.entries(mappings)) {
     const regex = new RegExp(`\\b${chichewa}\\b`, 'gi');
@@ -136,14 +137,28 @@ app.post('/api/command', (req, res) => {
   let response = { success: false, message: "", type: "error" };
 
   if (lower.includes('sold') || lower.includes('sale')) {
-    const itemMatch = lower.match(/(?:sold|sale)\s+(\d+)\s+([a-z\s]+?)(?:\s+at|\s+for|$)/i);
-    const quantity = itemMatch ? parseInt(itemMatch[1]) : 1;
-    const item = itemMatch ? itemMatch[2].trim() : 'item';
-    const priceMatch = lower.match(/at\s*(\d+)|for\s*(\d+)/);
-    const price = priceMatch ? parseInt(priceMatch[1] || priceMatch[2]) : 0;
+    //const itemMatch = lower.match(/(?:sold|sale)\s+(\d+)\s+([a-z\s]+?)(?:\s+at|\s+for|$)/i);       
+    let quantity, item;
+
+    let match1 = lower.match(/sold\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i);
+
+    let match2 = lower.match(/sold\s+([a-z\s]+?)\s+(\d+)\s+(?:at|for)\s+(\d+)/i);
+    // senteces come in diffarennt formarts thus why were trying to add two txt matching
+
+    if (match1) {
+      quantity = parseInt(match1[1]);
+      item = match1[2].trim();
+      price = parseInt(match1[3]);
+    } else if (match2) {
+      item = match2[1].trim();
+      quantity = parseInt(match2[2]);
+      price = parseInt(match2[3]);
+    } else {
+      return res.json({ success: false, message: "Could not understand sale format" });
+    }
 
     if (price === 0) {
-      response.message = "Please tell me the price. Example: gulitsa 3 buku pa 500";
+      response.message = "chonde ndiwuzeni Mtengo. mwachitsanzo: ndagulitsa 3 buku pa 500";
       return res.json(response);
     }
 
@@ -175,7 +190,7 @@ app.post('/api/command', (req, res) => {
 
           response = {
             success: true,
-            message: `Sale recorded: ${quantity} ${item} sold for ${amount} total.`,
+            message: `zogulitsa sasungidwa: ${quantity} ${item} sold for ${amount} total.`,
             type: "success"
           };
           return res.json(response);
