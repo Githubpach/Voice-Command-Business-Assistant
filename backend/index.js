@@ -45,13 +45,15 @@ function normalizeCommand(command) {
     // Sales
     'gulitsa': 'sold',
     'anagulitsa': 'sold',
+    'ndanagulitsa pa mtengo': 'sold',
     'kugulitsa': 'sold',
     'malonda': 'sale',
     'ndagulitsa': 'sold',
     // Expenses or Purchases
     'gula': 'bought',
     'anagula': 'bought',
-    'ndanagula': 'bought',
+    'ndagula': 'bought',
+    'ndagula pa mtengo': 'bought',
     'kugula': 'bought',
     'lipira': 'paid',
     'lipirani': 'paid',
@@ -72,11 +74,19 @@ function normalizeCommand(command) {
     'mwezi': 'month',
     // numberrz
     'chimodzi': '1',
+    'imodzi': '1',
     'ziwiri': '2',
+    'awiri': '2',
     'zitatu': '3',
+    'atatu': '3',
     'zinayi': '4',
+    'anayi': '4',
     'zisanu': '5',
-    'zisanu ndi chimodzi': '6'
+    'asanu': '5',
+    'zisanu ndi chimodzi': '6',
+    'zisanu ndi ziwiri': '7',
+    'zisanu ndi zitatu': '8',
+    'zisanu ndi zinayi': '9'
   };
 
   const numberWords = {
@@ -91,6 +101,9 @@ function normalizeCommand(command) {
   'nine': '9',
   'ten': '10'
 };
+
+normalized = normalized
+  .replace(/pa mtengo wa|pa mtengo|mtengo wa/gi, 'at');
 
 for (const [word, digit] of Object.entries(numberWords)) {
   const regex = new RegExp(`\\b${word}\\b`, 'gi');
@@ -139,7 +152,7 @@ app.post('/api/command', (req, res) => {
     db.get('SELECT quantity FROM inventory WHERE item = ?', [item], (err, row) => { //forgooten to check invontory before slling
       const currentQty = row ? row.quantity : 0;
       if (currentQty < quantity) {
-        response.message = `Not enough stock. You have ${currentQty} ${item}, but tried to sell ${quantity}.`;
+        response.message = `Mulibe zinthu zokwanira, ${currentQty} ${item}, koma mukufuna kugulitsa ${quantity}.`;
         return res.json(response);
       }
 
