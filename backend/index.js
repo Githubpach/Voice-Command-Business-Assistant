@@ -44,6 +44,7 @@ function normalizeCommand(command) {
   const mappings = {
     'pa mtengo wa': 'at',
     // Sales
+    'gulisa': 'sold',
     'gulitsa': 'sold',
     'gulita': 'sold',
     'anagulitsa': 'sold',
@@ -219,7 +220,7 @@ app.post('/api/command', (req, res) => {
     return;
   }
 
-    //BUY STOCK
+  //BUY STOCK
   if (lower.includes('bought')) {
     const match = lower.match(/bought\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i);
     if (!match) {
@@ -249,29 +250,68 @@ app.post('/api/command', (req, res) => {
     });
   }
 
-  // ── ADDing  TO Stok
-  if (lower.includes('stock')) {
+  // ADD TO STOCK 
+  if (
+    lower.includes('add') &&
+    (lower.includes('stock') || lower.includes('inventory'))
+  ) {
+    const match = lower.match(/add\s+(\d+)\s+([a-z\s]+)/i);
+
+    if (!match) {
+      return res.json({
+        success: false,
+        message: "Could not understand add-to-stock format. Example: add 10 books to stock"
+      });
+    }
+
+    const quantity = parseInt(match[1]);
+    const item = match[2].replace(/stock|inventory/gi, '').trim();
+
+    db.run(
+      `INSERT OR REPLACE INTO inventory (item, quantity)
+     VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item=?),0) + ?)`,
+      [item, item, quantity],
+      (err) => {
+        if (err) {
+          return res.status(500).json({
+            success: false,
+            message: "Error updating stock"
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: `Added ${quantity} ${item} to stock`
+        });
+      }
+    );
+    return;
+  }
+
+  // ── VIEW STOCK ONLY
+  if (
+    lower.includes('stock') &&
+    !lower.includes('add') &&
+    !lower.includes('bought')
+  ) {
     db.all('SELECT * FROM inventory', [], (err, rows) => {
       if (!rows.length) {
-        return res.json({ success: true, message: "Stock ilibe kanthu pano" });
+        return res.json({
+          success: true,
+          message: "Stock ilibe kanthu pano"
+        });
       }
+
       const msg = rows.map(r => `${r.quantity} ${r.item}`).join(', ');
-      res.json({ success: true, message: `Stock pano: ${msg}` });
+      return res.json({
+        success: true,
+        message: `Stock pano: ${msg}`
+      });
     });
     return;
   }
 
-  // VIEW STOCK/INVENTORY
-    if (lower.includes('stock')) {
-    db.all('SELECT * FROM inventory', [], (err, rows) => {
-      if (!rows.length) {
-        return res.json({ success: true, message: "Stock ilibe kanthu pano" });
-      }
-      const msg = rows.map(r => `${r.quantity} ${r.item}`).join(', ');
-      res.json({ success: true, message: `Stock pano: ${msg}` });
-    });
-    return;
-  }
+
 
   // ── FALLBACK ────────────────────────────────────────
   return res.json({
