@@ -51,6 +51,7 @@ function normalizeCommand(command) {
     // Expenses or Purchases
     'gula': 'bought',
     'anagula': 'bought',
+    'ndanagula': 'bought',
     'kugula': 'bought',
     'lipira': 'paid',
     'lipirani': 'paid',
@@ -58,6 +59,7 @@ function normalizeCommand(command) {
     // Inventory
     'onjeza': 'add',
     'onjezerani': 'add',
+    'ndaonjezera': 'add',
     'katundu': 'stock',
     'zinthu': 'inventory',
     // Reports
@@ -88,7 +90,6 @@ function normalizeCommand(command) {
 
 app.post('/api/command', (req, res) => {
   const { command } = req.body;
-
   if (!command || typeof command !== 'string') {
     return res.status(400).json({
       success: false,

@@ -3,7 +3,6 @@ import { Mic, MicOff, TrendingUp, TrendingDown, Package, DollarSign, HelpCircle,
 import * as XLSX from 'xlsx';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-
 const VoiceBusinessAssistant = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -93,7 +92,7 @@ const VoiceBusinessAssistant = () => {
   const speak = (text) => {
     synthRef.current.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'sw-KE';
+    utterance.lang = 'zu-ZA';
     utterance.rate = 0.95;
     synthRef.current.speak(utterance);
   };
@@ -110,7 +109,6 @@ const VoiceBusinessAssistant = () => {
 
   const handleCommand = async (command) => {
     if (!command) return;
-
     try {
       const res = await fetch(`${API_BASE_URL}api/command`, {
         method: 'POST',
@@ -315,15 +313,15 @@ const VoiceBusinessAssistant = () => {
             <Package size={32} className="text-purple-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 text-center">Onani Katundu</p>
           </button>
-          <button onClick={() => quickCommand("profit today")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <button onClick={() => reportProfit("profit today")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <DollarSign size={32} className="text-green-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 text-center">Phindu Lero</p>
           </button>
-          <button onClick={() => quickCommand("summary")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <button onClick={() => reportInventory("summary")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <BarChart3 size={32} className="text-blue-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 text-center">Chidule</p>
           </button>
-          <button onClick={() => quickCommand("help")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+          <button onClick={() => provideHelp("help")} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <HelpCircle size={32} className="text-orange-500 mx-auto mb-2" />
             <p className="text-sm font-semibold text-gray-700 text-center">Thandizo</p>
           </button>
