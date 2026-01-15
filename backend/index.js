@@ -79,6 +79,24 @@ function normalizeCommand(command) {
     'zisanu ndi chimodzi': '6'
   };
 
+  const numberWords = {
+  'one': '1',
+  'two': '2',
+  'three': '3',
+  'four': '4',
+  'five': '5',
+  'six': '6',
+  'seven': '7',
+  'eight': '8',
+  'nine': '9',
+  'ten': '10'
+};
+
+for (const [word, digit] of Object.entries(numberWords)) {
+  const regex = new RegExp(`\\b${word}\\b`, 'gi');
+  normalized = normalized.replace(regex, digit);
+}
+
   for (const [chichewa, english] of Object.entries(mappings)) {
     const regex = new RegExp(`\\b${chichewa}\\b`, 'gi');
     normalized = normalized.replace(regex, english);
@@ -105,13 +123,11 @@ app.post('/api/command', (req, res) => {
   let response = { success: false, message: "", type: "error" };
 
   if (lower.includes('sold') || lower.includes('sale')) {
-    const quantityMatch = lower.match(/(\d+)/);
+    const itemMatch = lower.match(/(?:sold|sale)\s+(\d+)\s+([a-z\s]+?)(?:\s+at|\s+for|$)/i);
+    const quantity = itemMatch ? parseInt(itemMatch[1]) : 1;
+    const item = itemMatch ? itemMatch[2].trim() : 'item';
     const priceMatch = lower.match(/at\s*(\d+)|for\s*(\d+)/);
-    const itemMatch = lower.match(/(?:sold|sale)\s+(?:\d+\s+)?(.+?)(?:\s+at|\s+for|$)/i);
-
-    const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 1;
     const price = priceMatch ? parseInt(priceMatch[1] || priceMatch[2]) : 0;
-    let item = itemMatch ? itemMatch[1].trim() : 'item';
 
     if (price === 0) {
       response.message = "Please tell me the price. Example: gulitsa 3 buku pa 500";
@@ -120,31 +136,39 @@ app.post('/api/command', (req, res) => {
 
     const amount = quantity * price;
     const date = new Date().toISOString();
-    db.run(
-      'INSERT INTO sales (date, item, quantity, price, amount) VALUES (?, ?, ?, ?, ?)',
-      [date, item, quantity, price, amount],
-      function (err) {
-        if (err) {
-          response.message = "Error saving sale";
-          return res.status(500).json(response);
-        }
-
-        db.run(
-          'INSERT OR REPLACE INTO inventory (item, quantity) ' +
-          'VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item = ?), 0) - ?)',
-          [item, item, quantity],
-          (err2) => {
-            if (err2) console.error('Inventory update error:', err2);
-          }
-        );
-        response = {
-          success: true,
-          message: `Sale recorded: ${quantity} ${item} sold for ${amount} total.`,
-          type: "success"
-        };
+    db.get('SELECT quantity FROM inventory WHERE item = ?', [item], (err, row) => { //forgooten to check invontory before slling
+      const currentQty = row ? row.quantity : 0;
+      if (currentQty < quantity) {
+        response.message = `Not enough stock. You have ${currentQty} ${item}, but tried to sell ${quantity}.`;
         return res.json(response);
       }
-    );
+
+      db.run(
+        'INSERT INTO sales (date, item, quantity, price, amount) VALUES (?, ?, ?, ?, ?)',
+        [date, item, quantity, price, amount],
+        function (err) {
+          if (err) {
+            response.message = "Error saving sale";
+            return res.status(500).json(response);
+          }
+
+          db.run(
+            'UPDATE inventory SET quantity = ? WHERE item = ?',
+            [currentQty - quantity, item],
+            (err2) => {
+              if (err2) console.error('Inventory update error:', err2);
+            }
+          );
+
+          response = {
+            success: true,
+            message: `Sale recorded: ${quantity} ${item} sold for ${amount} total.`,
+            type: "success"
+          };
+          return res.json(response);
+        }
+      );
+    });
     return;
   }
 
