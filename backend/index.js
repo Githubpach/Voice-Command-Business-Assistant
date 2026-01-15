@@ -59,6 +59,7 @@ function normalizeCommand(command) {
     'kugula': 'bought',
     'lipira': 'paid',
     'ndalipira': 'paid',
+    'nalipira': 'paid',
     'lipirani': 'paid',
     'chiwongola': 'expense',
     // Inventory
