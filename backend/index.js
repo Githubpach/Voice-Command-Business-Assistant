@@ -107,8 +107,7 @@ function normalizeCommand(command) {
     'ten': '10'
   };
 
-  normalized = normalized
-    .replace(/pa mtengo wa|pa mtengo|mtengo wa/gi, 'at');
+  normalized = normalized.replace(/pa mtengo wa|pa mtengo|mtengo wa/gi, 'at');
 
   for (const [word, digit] of Object.entries(numberWords)) {
     const regex = new RegExp(`\\b${word}\\b`, 'gi');
@@ -126,88 +125,50 @@ function normalizeCommand(command) {
 
 app.post('/api/command', (req, res) => {
   const { command } = req.body;
-  if (!command || typeof command !== 'string') {
-    return res.status(400).json({
-      success: false,
-      message: "No command received",
-      type: "error"
-    });
+  if (!command) {
+    return res.json({ success: false, message: "No command received" });
   }
 
-  const normalized = normalizeCommand(command);
-  const lower = normalized.toLowerCase();
+  const lower = normalizeCommand(command);
 
   // ── SALES 
-  if (lower.includes('sold') || lower.includes('sale')) {
-    //const itemMatch = lower.match(/(?:sold|sale)\s+(\d+)\s+([a-z\s]+?)(?:\s+at|\s+for|$)/i);       
-    let quantity, item, price;
+  if (lower.includes('sold')) {
+    const match =
+      lower.match(/sold\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i) ||
+      lower.match(/sold\s+([a-z\s]+?)\s+(\d+)\s+(?:at|for)\s+(\d+)/i);
 
-    let match1 = lower.match(/sold\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i);
-
-    let match2 = lower.match(/sold\s+([a-z\s]+?)\s+(\d+)\s+(?:at|for)\s+(\d+)/i);
-    // senteces come in diffarennt formarts thus why were trying to add two txt matching
-
-    if (match1) {
-      quantity = parseInt(match1[1]);
-      item = match1[2].trim();
-      price = parseInt(match1[3]);
-    } else if (match2) {
-      item = match2[1].trim();
-      quantity = parseInt(match2[2]);
-      price = parseInt(match2[3]);
-    } else {
+    if (!match) {
       return res.json({ success: false, message: "Could not understand sale format" });
     }
 
-    if (!price || price === 0) {
-      response.message = "chonde ndiwuzeni Mtengo. mwachitsanzo: ndagulitsa 3 buku pa 500";
-      return res.json(response);
-    }
+    const quantity = parseInt(match[1]) || parseInt(match[2]);
+    let item = (match[2] || match[1]).replace(/s$/, '').trim();
+    const price = parseInt(match[3]);
 
     const amount = quantity * price;
     const date = new Date().toISOString();
-    db.get('SELECT quantity FROM inventory WHERE item = ?', [item], (err, row) => { //forgooten to check invontory before slling
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Database error checking inventory",
-          type: "error"
-        });
-      }
+
+    db.get('SELECT quantity FROM inventory WHERE item = ?', [item], (err, row) => {
       const currentQty = row ? row.quantity : 0;
+
       if (currentQty < quantity) {
-        response.message = `Mulibe zinthu zokwanira, ${currentQty} ${item}, koma mukufuna kugulitsa ${quantity}.`;
-        return res.json(response);
+        return res.json({
+          success: false,
+          message: `Stock yochepa: muli ndi ${currentQty} ${item}`
+        });
       }
 
       db.run(
         'INSERT INTO sales (date, item, quantity, price, amount) VALUES (?, ?, ?, ?, ?)',
         [date, item, quantity, price, amount],
-        function (err) {
-          if (err) {
-            console.error('Sales insert error:', err);
-            return res.status(500).json({
-              success: false,
-              message: "Error saving sale",
-              type: "error"
-            });
-          }
-
-          const newQty = currentQty - quantity;
+        () => {
           db.run(
             'UPDATE inventory SET quantity = ? WHERE item = ?',
-            [newQty, item],
-            (err2) => {
-              if (err2) {
-                console.error('Inventory update error:', err2);
-              }
-            }
+            [currentQty - quantity, item]
           );
-
-          return res.json({
+          res.json({
             success: true,
-            message: `Zogulitsa zasungidwa: ${quantity} ${item} @ ${price} = ${amount} total.`,
-            type: "success"
+            message: `Zagulitsa: ${quantity} ${item} @ ${price} = ${amount}`
           });
         }
       );
@@ -258,76 +219,56 @@ app.post('/api/command', (req, res) => {
     return;
   }
 
-  // ── ADDing  TO Stok
-   if (lower.includes('add') && (lower.includes('stock') || lower.includes('inventory'))) {
-    const quantityMatch = lower.match(/(\d+)/);
-    const itemMatch = lower.match(/(?:add|onjeza)\s+(?:\d+\s+)?(.+?)(?:\s+to|\s+in|$)/i);
-
-    const quantity = quantityMatch ? parseInt(quantityMatch[1]) : 0;
-    let item = itemMatch ? itemMatch[1].trim().replace(/to stock|to inventory|stock|inventory/gi, '').trim() : 'item';
-
-    if (!quantity || quantity === 0) {
-      return res.json({
-        success: false,
-        message: "Please tell me how many to add. Example: onjeza 10 buku ku stock",
-        type: "error"
-      });
+    //BUY STOCK
+  if (lower.includes('bought')) {
+    const match = lower.match(/bought\s+(\d+)\s+([a-z\s]+?)\s+(?:at|for)\s+(\d+)/i);
+    if (!match) {
+      return res.json({ success: false, message: "Could not understand purchase format" });
     }
 
-    db.run(
-      'INSERT OR REPLACE INTO inventory (item, quantity) ' +
-      'VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item = ?), 0) + ?)',
-      [item, item, quantity],
-      function (err) {
-        if (err) {
-          console.error('Stock update error:', err);
-          return res.status(500).json({
-            success: false,
-            message: "Error updating stock",
-            type: "error"
-          });
-        }
+    const quantity = parseInt(match[1]);
+    let item = match[2].replace(/s$/, '').trim();
+    const price = parseInt(match[3]);
+    const total = quantity * price;
+    const date = new Date().toISOString();
 
-        return res.json({
-          success: true,
-          message: `Added ${quantity} ${item} to stock.`,
-          type: "success"
-        });
+    db.serialize(() => {
+      db.run(
+        'INSERT OR REPLACE INTO inventory (item, quantity) VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item=?),0)+?)',
+        [item, item, quantity]
+      );
+      db.run(
+        'INSERT INTO expenses (date, item, amount) VALUES (?, ?, ?)',
+        [date, item, total]
+      );
+    });
+
+    return res.json({
+      success: true,
+      message: `Nagula ${quantity} ${item} pa ${total} ndipo zasungidwa ku stock`
+    });
+  }
+
+  // ── ADDing  TO Stok
+  if (lower.includes('stock')) {
+    db.all('SELECT * FROM inventory', [], (err, rows) => {
+      if (!rows.length) {
+        return res.json({ success: true, message: "Stock ilibe kanthu pano" });
       }
-    );
+      const msg = rows.map(r => `${r.quantity} ${r.item}`).join(', ');
+      res.json({ success: true, message: `Stock pano: ${msg}` });
+    });
     return;
   }
 
   // VIEW STOCK/INVENTORY
-  if (lower.includes('stock') || lower.includes('inventory')) {
-    db.all('SELECT * FROM inventory ORDER BY item', [], (err, rows) => {
-      if (err) {
-        return res.status(500).json({
-          success: false,
-          message: "Error retrieving inventory",
-          type: "error"
-        });
+    if (lower.includes('stock')) {
+    db.all('SELECT * FROM inventory', [], (err, rows) => {
+      if (!rows.length) {
+        return res.json({ success: true, message: "Stock ilibe kanthu pano" });
       }
-
-      if (rows.length === 0) {
-        return res.json({
-          success: true,
-          message: "Your inventory is empty. Add items with: 'add 10 books to stock'",
-          type: "info"
-        });
-      }
-
-      let msg = "Current stock: ";
-      rows.forEach((r, i) => {
-        msg += `${r.quantity} ${r.item}`;
-        if (i < rows.length - 1) msg += ", ";
-      });
-
-      return res.json({
-        success: true,
-        message: msg,
-        type: "info"
-      });
+      const msg = rows.map(r => `${r.quantity} ${r.item}`).join(', ');
+      res.json({ success: true, message: `Stock pano: ${msg}` });
     });
     return;
   }
