@@ -56,6 +56,7 @@ function normalizeCommand(command) {
     'gula': 'bought',
     'anagula': 'bought',
     'nagula': 'bought',
+    'dagula': 'bought',
     'ndagula': 'bought',
     'ndagula pa mtengo': 'bought',
     'kugula': 'bought',
@@ -251,42 +252,50 @@ app.post('/api/command', (req, res) => {
   }
 
   // ADD TO STOCK 
-  if (
-    lower.includes('add') &&
-    (lower.includes('stock') || lower.includes('inventory'))
-  ) {
-    const match = lower.match(/add\s+(\d+)\s+([a-z\s]+)/i);
+if (lower.includes('add') && (lower.includes('stock') || lower.includes('inventory'))) {
 
-    if (!match) {
-      return res.json({
-        success: false,
-        message: "Could not understand add-to-stock format. Example: add 10 books to stock"
-      });
-    }
+  const match = lower.match(
+    /add\s+(\d+)\s+(.+?)\s+to\s+(?:stock|inventory)/i
+  );
 
-    const quantity = parseInt(match[1]);
-    const item = match[2].replace(/stock|inventory/gi, '').trim();
+  if (!match) {
+    return res.json({
+      success: false,
+      message: "Could not understand add-to-stock format. Example: add 4 books to stock"
+    });
+  }
 
-    db.run(
-      `INSERT OR REPLACE INTO inventory (item, quantity)
-     VALUES (?, COALESCE((SELECT quantity FROM inventory WHERE item=?),0) + ?)`,
-      [item, item, quantity],
-      (err) => {
-        if (err) {
-          return res.status(500).json({
-            success: false,
-            message: "Error updating stock"
-          });
-        }
+  const quantity = parseInt(match[1], 10);
+  const item = match[2].replace(/s$/, '').trim(); // singularize
 
-        return res.json({
-          success: true,
-          message: `Added ${quantity} ${item} to stock`
+  console.log(quantity, item); // ✅ will log: 4 book
+
+  db.run(
+    `
+    INSERT INTO inventory (item, quantity)
+    VALUES (?, ?)
+    ON CONFLICT(item)
+    DO UPDATE SET quantity = quantity + ?
+    `,
+    [item, quantity, quantity],
+    (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to update stock"
         });
       }
-    );
-    return;
-  }
+
+      res.json({
+        success: true,
+        message: `Added ${quantity} ${item}(s) to stock`
+      });
+    }
+  );
+
+  return;
+}
 
   // ── VIEW STOCK ONLY
   if (
